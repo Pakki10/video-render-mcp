@@ -1,0 +1,45 @@
+{
+  "name": "video-render-mcp",
+  "version": "0.1.0",
+  "private": false,
+  "description": "MCP server that turns a script into a Hyperplexed-style motion-graphics MP4. Free msedge-tts voice, Remotion for animation, no watermark.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/globalion/video-render-mcp"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "prisma generate && next build",
+    "start": "next start -p 3000",
+    "lint": "eslint",
+    "prisma": "prisma",
+    "smoke": "tsx scripts/smoke-render.ts"
+  },
+  "dependencies": {
+    "@auth/prisma-adapter": "^2.11.1",
+    "@prisma/client": "^6.19.2",
+    "@remotion/bundler": "^4.0.400",
+    "@remotion/cli": "^4.0.400",
+    "@remotion/renderer": "^4.0.400",
+    "msedge-tts": "^2.0.7",
+    "next": "16.1.6",
+    "next-auth": "^5.0.0-beta.30",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "remotion": "^4.0.400",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.1.6",
+    "prisma": "^6.19.2",
+    "tailwindcss": "^4",
+    "@tailwindcss/postcss": "^4",
+    "tsx": "^4.21.0",
+    "typescript": "^5"
+  }
+}
