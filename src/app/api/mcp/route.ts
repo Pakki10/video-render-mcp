@@ -8,12 +8,16 @@ import { readDailyUsage } from "@/lib/quota";
 import { scenePlanSchema, type ScenePlan } from "@/lib/scene-plan";
 import { synthesize } from "@/lib/tts";
 import { renderVideo } from "@/lib/render";
+import { quoteCredits, tryDeduct, refund, readBalance } from "@/lib/credits";
 import {
   TOOL_DEFINITIONS,
   findTool,
   jsonSchemaFor,
   type ToolName,
 } from "@/lib/mcp/tools";
+
+const TOPUP_URL =
+  (process.env.PUBLIC_BASE_URL?.replace(/\/$/, "") || "") + "/dashboard#credits";
 
 export const runtime = "nodejs";
 export const maxDuration = 300; // Remotion renders can be slow
@@ -124,15 +128,22 @@ async function runTool(name: ToolName, args: ScenePlan, userId: string) {
 }
 
 async function doRender(plan: ScenePlan, userId: string) {
-  const quota = await readDailyUsage(userId);
-  if (quota.remaining <= 0) {
+  // Legacy quota (20/day) is now advisory — credits are the real limit.
+  // Keep this call so we still write to RenderJob for analytics.
+  await readDailyUsage(userId);
+
+  // Cost estimate based on target duration — actual might differ by up to
+  // ~10% depending on TTS pacing. We deduct the ESTIMATE up front and
+  // reconcile once we know the true duration.
+  const upfront = quoteCredits(plan);
+  const balanceAfter = await tryDeduct(userId, upfront.totalCredits, "render");
+  if (balanceAfter === null) {
+    const currentBalance = await readBalance(userId);
     throw new Error(
-      `Daily quota exhausted (${quota.used}/${quota.limit}). Resets ${quota.resetAt.toISOString()}.`
+      `Insufficient credits: this render needs ${upfront.totalCredits} credits, you have ${currentBalance}. Top up at ${TOPUP_URL}`
     );
   }
 
-  // Book the job row FIRST so multiple concurrent calls can't race past the
-  // quota check. Update status once we know how it went.
   const job = await prisma.renderJob.create({
     data: { userId, status: "pending" },
   });
@@ -145,8 +156,20 @@ async function doRender(plan: ScenePlan, userId: string) {
       plan,
       narrationBytes: audio.bytes,
       narrationDurationSec: audio.durationSec,
+      words: audio.words,
       outputDir,
     });
+
+    // Reconcile: if the actual render was shorter than the target, refund the
+    // difference. If it was LONGER we eat the delta — cheaper than surprising
+    // the user with a second deduction.
+    const actual = quoteCredits(plan, result.durationSec);
+    let creditsRemaining = balanceAfter;
+    if (actual.totalCredits < upfront.totalCredits) {
+      const overcharge = upfront.totalCredits - actual.totalCredits;
+      await refund(userId, overcharge, job.id);
+      creditsRemaining = balanceAfter + overcharge;
+    }
 
     const fileName = path.basename(result.filePath);
     const videoUrl = publicUrlFor(fileName, job.id);
@@ -161,26 +184,35 @@ async function doRender(plan: ScenePlan, userId: string) {
       },
     });
 
-    // Rename the file to match the jobId so /api/renders/[id] can find it.
     const renamedPath = path.join(outputDir, `${job.id}.mp4`);
     await fs.rename(result.filePath, renamedPath).catch(() => undefined);
+
+    const lowCredits = creditsRemaining < 50;
+    const lowNote = lowCredits
+      ? `\n⚠ Only ${creditsRemaining} credits left (~${Math.floor(creditsRemaining / actual.totalCredits)} more videos). Top up: ${TOPUP_URL}`
+      : "";
 
     return {
       content: [
         {
           type: "text",
           text:
-            `Rendered ${plan.title} — ${result.durationSec.toFixed(1)}s, ${(result.bytes.length / 1024 / 1024).toFixed(2)} MB.\n${videoUrl}`,
+            `Rendered ${plan.title} — ${result.durationSec.toFixed(1)}s, ${(result.bytes.length / 1024 / 1024).toFixed(2)} MB. Cost: ${actual.totalCredits} credits (${creditsRemaining} left).\n${videoUrl}${lowNote}`,
         },
       ],
       structuredContent: {
         videoUrl,
         durationSec: result.durationSec,
         sizeBytes: result.bytes.length,
+        creditsSpent: actual.totalCredits,
+        creditsRemaining,
+        topupUrl: TOPUP_URL,
         provider: audio.provider,
       },
     };
   } catch (err) {
+    // Render failed — refund every credit we deducted up front.
+    await refund(userId, upfront.totalCredits, job.id);
     await prisma.renderJob
       .update({
         where: { id: job.id },

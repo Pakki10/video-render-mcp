@@ -14,6 +14,7 @@ async function main() {
     targetDurationSec: 10,
     voice: "male-uk",
     music: "none",
+    captions: false,
     accent: "#0D9488",
     script:
       "This is a smoke test of the standalone video render MCP. It runs the whole pipeline without any external database.",
@@ -35,6 +36,7 @@ async function main() {
     plan,
     narrationBytes: audio.bytes,
     narrationDurationSec: audio.durationSec,
+    words: audio.words,
     outputDir,
   });
   console.log(`      ${((Date.now() - t0) / 1000).toFixed(1)}s → ${result.filePath} (${(result.bytes.length / 1024 / 1024).toFixed(2)} MB)`);

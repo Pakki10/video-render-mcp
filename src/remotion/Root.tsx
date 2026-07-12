@@ -3,13 +3,13 @@ import { HyperplexedStyle } from "./HyperplexedStyle";
 import type { RemotionInputProps } from "../lib/scene-plan";
 
 const FPS = 30;
-const WIDTH = 1280;
-const HEIGHT = 720;
+const WIDTH = 1920;
+const HEIGHT = 1080;
 
 /**
  * Composition entry point. The renderer supplies real inputProps when it calls
- * renderMedia(); the fallbacks below only exist so the Remotion Studio preview
- * (`npx remotion studio`) doesn't crash on a bare load.
+ * renderMedia(); the fallbacks below only exist so `npx remotion studio`
+ * doesn't crash on a bare load.
  */
 export function RemotionRoot() {
   const raw = getInputProps() as Partial<RemotionInputProps>;
@@ -40,11 +40,14 @@ function buildDefaults(): RemotionInputProps {
       voice: "male-uk",
       scenes: [{ type: "title", copy: "Preview" }],
       music: "none",
+      captions: false,
       accent: "#0D9488",
     },
     narrationDataUrl:
       "data:audio/mpeg;base64,//uQxAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAABAAAB4AA=",
+    musicUrl: null,
     totalDurationSec: 10,
     sceneRanges: [{ startSec: 0, endSec: 10 }],
+    words: [],
   };
 }

@@ -17,10 +17,31 @@ model User {
   image         String?
   createdAt     DateTime  @default(now())
 
-  accounts    Account[]
-  sessions    Session[]
-  apiKeys     ApiKey[]
-  renderJobs  RenderJob[]
+  // Prepaid credits. New users get 100 free (trial). 1 credit ≈ 3 seconds of
+  // free-voice render or 1 second of premium-voice render.
+  creditBalance Int       @default(100)
+
+  accounts     Account[]
+  sessions     Session[]
+  apiKeys      ApiKey[]
+  renderJobs   RenderJob[]
+  transactions CreditTransaction[]
+}
+
+// Immutable ledger of credit changes. `delta` is positive for grants
+// (trial, purchase, refund) and negative for renders.
+model CreditTransaction {
+  id        String   @id @default(cuid())
+  userId    String
+  delta     Int
+  reason    String   // "trial" | "purchase" | "render" | "refund" | "admin_grant"
+  jobId     String?  // links a "render" transaction to its RenderJob
+  metadata  Json?    // e.g. { stripeSessionId, packName, priceUsd }
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
 }
 
 model Account {

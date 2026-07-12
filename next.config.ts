@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
     "@remotion/bundler",
     "@remotion/cli",
     "msedge-tts",
+    "stripe",
   ],
 };
 

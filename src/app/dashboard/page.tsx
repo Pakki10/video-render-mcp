@@ -2,8 +2,10 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { auth, signOut } from "@/lib/auth";
 import { getCurrentKeyPrefix } from "@/lib/keys";
-import { readDailyUsage } from "@/lib/quota";
+import { readBalance, CREDIT_PACKS } from "@/lib/credits";
+import { isStripeConfigured } from "@/lib/stripe";
 import { KeyPanel } from "./key-panel";
+import { CreditsPanel } from "./credits-panel";
 
 export default async function Dashboard({
   searchParams,
@@ -15,10 +17,12 @@ export default async function Dashboard({
 
   const sp = await searchParams;
   const rawKey = typeof sp.freshKey === "string" ? sp.freshKey : null;
-  const [prefix, quota] = await Promise.all([
+  const purchaseResult = typeof sp.purchase === "string" ? sp.purchase : null;
+  const [prefix, balance] = await Promise.all([
     getCurrentKeyPrefix(session.user.id),
-    readDailyUsage(session.user.id),
+    readBalance(session.user.id),
   ]);
+  const billingLive = isStripeConfigured();
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-12">
@@ -46,23 +50,22 @@ export default async function Dashboard({
 
       <KeyPanel initialPrefix={prefix} freshKey={rawKey} />
 
-      <section className="mt-10 rounded-lg border border-neutral-800 bg-neutral-900 p-5">
-        <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-neutral-500">
-          Today&apos;s usage
+      <CreditsPanel
+        balance={balance}
+        packs={CREDIT_PACKS.map((p) => ({ ...p }))}
+        billingLive={billingLive}
+        purchaseResult={purchaseResult}
+      />
+
+      <section className="mt-6 rounded-lg border border-neutral-800 bg-neutral-900 p-5 text-xs text-neutral-400">
+        <div className="mb-1 font-semibold uppercase tracking-wider text-neutral-500">
+          Pricing
         </div>
-        <div className="flex items-baseline gap-2">
-          <span className="text-3xl font-bold text-teal-300">{quota.used}</span>
-          <span className="text-neutral-500">/ {quota.limit} renders</span>
-        </div>
-        <div className="mt-3 h-2 overflow-hidden rounded-full bg-neutral-800">
-          <div
-            className="h-full bg-teal-400"
-            style={{ width: `${Math.min(100, (quota.used / quota.limit) * 100)}%` }}
-          />
-        </div>
-        <p className="mt-3 text-xs text-neutral-500">
-          Resets at {quota.resetAt.toISOString().slice(0, 16).replace("T", " ")} UTC.
-        </p>
+        Every render deducts credits based on final duration and voice tier:
+        <ul className="mt-2 space-y-1">
+          <li>• <b>Standard voice</b> (msedge-tts, no key needed): <b>1 credit per 3 seconds</b> of output.</li>
+          <li>• <b>Premium voice</b> (ElevenLabs, natural neural): <b>3× that</b>, plus <b>25% surcharge for captions</b>.</li>
+        </ul>
       </section>
 
       <section className="mt-6 rounded-lg border border-neutral-800 bg-neutral-900 p-5">

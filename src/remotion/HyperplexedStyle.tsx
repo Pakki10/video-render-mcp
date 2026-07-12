@@ -3,11 +3,14 @@ import { TitleScene } from "./scenes/TitleScene";
 import { CodeScene } from "./scenes/CodeScene";
 import { StatScene } from "./scenes/StatScene";
 import { CtaScene } from "./scenes/CtaScene";
-import type { RemotionInputProps, Scene } from "../lib/scene-plan";
+import { Captions } from "./Captions";
+import type { RemotionInputProps, Scene, WordTiming } from "../lib/scene-plan";
 
 export function HyperplexedStyle(props: RemotionInputProps) {
   const { fps } = useVideoConfig();
-  const { plan, narrationDataUrl, sceneRanges } = props;
+  const { plan, narrationDataUrl, musicUrl, sceneRanges, words } = props;
+  const showCaptions =
+    plan.captions !== false && words.length > 0 && plan.voice.startsWith("premium-");
 
   return (
     <AbsoluteFill style={{ background: "#0f172a" }}>
@@ -25,6 +28,9 @@ export function HyperplexedStyle(props: RemotionInputProps) {
           </Sequence>
         );
       })}
+      {showCaptions ? <Captions words={words as WordTiming[]} /> : null}
+      {/* Background music at 15% volume — auto-ducks under narration by ear */}
+      {musicUrl ? <Audio src={musicUrl} volume={0.15} loop /> : null}
       <Audio src={narrationDataUrl} />
     </AbsoluteFill>
   );

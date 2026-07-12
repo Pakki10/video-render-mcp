@@ -36,10 +36,28 @@ export const scenePlanSchema = z.object({
   targetDurationSec: z.number().int().min(5).max(180).default(30),
   script: z.string().describe("Full narration text. Size it to ~150 wpm × duration."),
   voice: z
-    .enum(["male-uk", "female-uk", "male-us", "female-us"])
+    .enum([
+      // Free tier — Microsoft Edge neural voices. Good but "clearly AI".
+      "male-uk",
+      "female-uk",
+      "male-us",
+      "female-us",
+      // Premium tier — ElevenLabs. Human-indistinguishable.  3x credit cost.
+      "premium-male-uk",
+      "premium-female-uk",
+      "premium-male-us",
+      "premium-female-us",
+    ])
     .default("male-uk"),
   scenes: z.array(sceneSchema).min(1).max(12),
-  music: z.enum(["upbeat", "chill", "tense", "none"]).default("none"),
+  music: z
+    .enum(["upbeat", "chill", "tense", "none"])
+    .default("none")
+    .describe("Background music track (auto-ducked under narration)."),
+  captions: z
+    .boolean()
+    .default(true)
+    .describe("Burn in word-timed subtitles. Requires a premium voice — ignored on free voices."),
   accent: z
     .string()
     .default("#0D9488")
@@ -49,6 +67,20 @@ export const scenePlanSchema = z.object({
 export type ScenePlan = z.infer<typeof scenePlanSchema>;
 export type Scene = z.infer<typeof sceneSchema>;
 
+export function isPremiumVoice(v: ScenePlan["voice"]): boolean {
+  return v.startsWith("premium-");
+}
+
+/**
+ * Word-level timing pulled from ElevenLabs' timestamps response so the
+ * Remotion caption component can highlight the word being spoken.
+ */
+export interface WordTiming {
+  word: string;
+  startSec: number;
+  endSec: number;
+}
+
 /**
  * The full input passed to the Remotion composition — plan + resolved audio
  * (as a data URL) + per-scene time ranges. Index signature keeps Remotion's
@@ -57,7 +89,9 @@ export type Scene = z.infer<typeof sceneSchema>;
 export interface RemotionInputProps {
   plan: ScenePlan;
   narrationDataUrl: string;
+  musicUrl: string | null;
   totalDurationSec: number;
   sceneRanges: Array<{ startSec: number; endSec: number }>;
+  words: WordTiming[];
   [key: string]: unknown;
 }

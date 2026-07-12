@@ -9,11 +9,35 @@ import fs from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { bundle } from "@remotion/bundler";
 import { renderMedia, selectComposition } from "@remotion/renderer";
-import type { RemotionInputProps, ScenePlan, Scene } from "./scene-plan";
+import type { RemotionInputProps, ScenePlan, Scene, WordTiming } from "./scene-plan";
 
 const FPS = 30;
-const WIDTH = 1280;
-const HEIGHT = 720;
+const WIDTH = 1920;
+const HEIGHT = 1080;
+
+/**
+ * Bundled royalty-free music tracks. Live under public/music/ so Remotion
+ * can load them via file:// during the render. Add new tracks by dropping
+ * an mp3 in that folder and mapping it here.
+ */
+const MUSIC_TRACKS: Record<Exclude<ScenePlan["music"], "none">, string> = {
+  upbeat: "public/music/upbeat.mp3",
+  chill: "public/music/chill.mp3",
+  tense: "public/music/tense.mp3",
+};
+
+async function resolveMusicUrl(track: ScenePlan["music"]): Promise<string | null> {
+  if (track === "none") return null;
+  const rel = MUSIC_TRACKS[track];
+  if (!rel) return null;
+  const abs = path.join(process.cwd(), rel);
+  try {
+    const bytes = await fs.readFile(abs);
+    return `data:audio/mpeg;base64,${bytes.toString("base64")}`;
+  } catch {
+    return null; // fail-safe: no music
+  }
+}
 
 const BROWSER_EXECUTABLE =
   process.env.REMOTION_CHROME_EXECUTABLE ||
@@ -68,6 +92,7 @@ export interface RenderVideoArgs {
   plan: ScenePlan;
   narrationBytes: Buffer;
   narrationDurationSec: number;
+  words: WordTiming[];
   /** Absolute directory that the caller owns; the mp4 will land here. */
   outputDir: string;
 }
@@ -81,15 +106,18 @@ export interface RenderVideoResult {
 }
 
 export async function renderVideo(args: RenderVideoArgs): Promise<RenderVideoResult> {
-  const { plan, narrationBytes, narrationDurationSec, outputDir } = args;
+  const { plan, narrationBytes, narrationDurationSec, words, outputDir } = args;
 
   const totalDurationSec = Math.max(1, narrationDurationSec);
   const sceneRanges = computeSceneRanges(plan, totalDurationSec);
+  const musicUrl = await resolveMusicUrl(plan.music);
   const inputProps: RemotionInputProps = {
     plan,
     narrationDataUrl: `data:audio/mpeg;base64,${narrationBytes.toString("base64")}`,
+    musicUrl,
     totalDurationSec,
     sceneRanges,
+    words,
   };
 
   const serveUrl = await getBundle();
