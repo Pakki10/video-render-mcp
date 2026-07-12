@@ -1,5 +1,7 @@
 # video-render-mcp
 
+> Built by [**Shreyas**](https://github.com/Shreyas-Profile) · Shipped by [**Globalion**](https://github.com/globalion)
+
 An MCP server that turns a script into a Hyperplexed-style motion-graphics MP4.
 Plug the URL into Claude Desktop, Cursor, or any MCP-compatible agent and it
 gains a `render_video` tool.
