@@ -1,0 +1,26 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.Pakki10/video-render-mcp",
+  "title": "Video Render MCP",
+  "description": "Hosted MCP server that turns a topic into a Fireship-style short video — Remotion motion graphics, ElevenLabs premium voice with word-timed captions, background music, 1080p H.264 output, no local install.",
+  "version": "1.0.0",
+  "repository": {
+    "url": "https://github.com/Pakki10/video-render-mcp",
+    "source": "github"
+  },
+  "websiteUrl": "https://video-render.regiq.in",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://video-render.regiq.in/api/mcp",
+      "headers": [
+        {
+          "name": "Authorization",
+          "description": "Bearer <API key from https://video-render.regiq.in/dashboard>",
+          "isRequired": true,
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}
