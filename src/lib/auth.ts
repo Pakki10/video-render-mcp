@@ -33,5 +33,20 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
       },
     },
   },
+  callbacks: {
+    // With JWT strategy the adapter's user row exists but the client-side
+    // session doesn't automatically carry `user.id`. Copy it through so
+    // /api/keys/rotate etc. can find whose account they're mutating.
+    async jwt({ token, user }) {
+      if (user?.id) token.uid = user.id;
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user && typeof token.uid === "string") {
+        session.user.id = token.uid;
+      }
+      return session;
+    },
+  },
   // No custom signIn page — otherwise /api/auth/signin bounces back to "/".
 });
