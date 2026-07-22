@@ -10,11 +10,15 @@ export function ImageScene({
   src,
   caption,
   kenBurns = true,
+  fit = "cover",
+  background = "#0f172a",
   accent,
 }: {
   src: string;
   caption?: string;
   kenBurns?: boolean;
+  fit?: "cover" | "contain";
+  background?: string;
   accent: string;
 }) {
   const frame = useCurrentFrame();
@@ -41,11 +45,12 @@ export function ImageScene({
   });
 
   return (
-    <AbsoluteFill style={{ background: "#0f172a", overflow: "hidden" }}>
+    <AbsoluteFill style={{ background, overflow: "hidden" }}>
       <AbsoluteFill
         style={{
           transform: `scale(${scale}) translateX(${translateX}px)`,
           opacity: enter,
+          padding: fit === "contain" ? 40 : 0,
         }}
       >
         <Img
@@ -53,7 +58,7 @@ export function ImageScene({
           style={{
             width: "100%",
             height: "100%",
-            objectFit: "cover",
+            objectFit: fit,
             objectPosition: "center",
           }}
         />

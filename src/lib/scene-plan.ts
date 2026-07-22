@@ -45,12 +45,26 @@ export const sceneSchema = z.discriminatedUnion("type", [
   }),
   z.object({
     type: z.literal("image"),
-    src: imageUrlSchema.describe("The image to display full-frame (http(s) or data:image/...)"),
+    src: imageUrlSchema.describe(
+      "The image to display full-frame. Accepts an https URL or a data:image/... URL — use either the user's own screenshot/photo/PDF-page-as-image, or a data:image/svg+xml;base64 URL for an inline mockup."
+    ),
     caption: z.string().optional().describe("Overlay caption at the bottom"),
     kenBurns: z
       .boolean()
       .default(true)
       .describe("Slow zoom + drift while on screen (Ken Burns). Default true."),
+    fit: z
+      .enum(["cover", "contain"])
+      .default("cover")
+      .describe(
+        "How to fit the image in the 16:9 frame. 'cover' fills the frame and may crop (best for landscape screenshots and photos). 'contain' letterboxes to preserve the whole image (best for portrait screenshots, phone mockups, PDF pages)."
+      ),
+    background: z
+      .string()
+      .default("#0f172a")
+      .describe(
+        "Hex background colour behind the image — only visible when fit='contain' letterboxes."
+      ),
   }),
 ]);
 

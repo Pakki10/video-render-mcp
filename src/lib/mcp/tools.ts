@@ -14,13 +14,25 @@ export const TOOL_DEFINITIONS = [
   {
     name: "plan_video_scenes",
     description:
-      "Draft a ScenePlan for a Hyperplexed-style motion-graphics video. Fill title, targetDurationSec (5-180s), a script sized to ~150 wpm × duration, 1-12 scenes, voice, and accent. Returns the plan verbatim — call render_video with it when the user approves.",
+      "Draft a ScenePlan for a motion-graphics video. Fill title, targetDurationSec (5-180s), a script sized to ~150 wpm × duration, 1-12 scenes, voice, and accent. Returns the plan verbatim — call render_video with it when the user approves.\n\n" +
+      "SCENE TYPES:\n" +
+      "  • title  — big headline + optional subtitle (text only)\n" +
+      "  • stat   — big word/number + caption. Set `image` (url or data:image/…) to render an image beside the stat (device mockups, screenshots, illustrations)\n" +
+      "  • image  — full-frame image with Ken Burns pan + optional caption overlay. Use fit='contain' + a background hex for portrait screenshots / PDF pages / phone mockups so nothing is cropped\n" +
+      "  • code   — syntax-highlighted snippet with optional caption\n" +
+      "  • cta    — url + copy, animated end-card\n\n" +
+      "PROVIDING VISUALS:\n" +
+      "  Both `image` scenes and `stat.image` accept an https URL (Remotion fetches it during render) OR a data URL (`data:image/png;base64,…`, `data:image/svg+xml;base64,…`, etc.) — inline user-supplied screenshots/photos/PDF-page-images, OR generate SVG mockups on the fly and embed them as data URLs. Both paths render identically; pick whichever is cheaper for the caller.\n\n" +
+      "VOICE:\n" +
+      "  Free tier: `male-uk`, `female-uk`, `male-us`, `female-us` (Microsoft Edge Neural — clearly synthesised).\n" +
+      "  Premium tier (requires ELEVENLABS_API_KEY on server): `premium-male-uk`, `premium-female-uk`, `premium-male-us`, `premium-female-us` — human-quality, and enables word-timed captions.",
     inputSchema: scenePlanSchema,
   },
   {
     name: "render_video",
     description:
-      "Enqueue an async render of an MP4 from a ScenePlan. Returns immediately with { jobId, status: 'pending', statusUrl, videoUrl }. Poll statusUrl (GET, Bearer auth) until status='success', then fetch videoUrl (valid 7 days). Full renders take 60–300 seconds; the async shape sidesteps the Cloudflare Tunnel 100s HTTP cap. Narration uses msedge-tts (free) or ElevenLabs if the server has ELEVENLABS_API_KEY.",
+      "Enqueue an async render of an MP4 from a ScenePlan. Returns immediately with { jobId, status: 'pending', statusUrl, videoUrl }. Poll statusUrl (GET, Bearer auth) until status='success', then fetch videoUrl (valid 7 days). Full renders take 60–300 seconds; the async shape sidesteps the Cloudflare Tunnel 100s HTTP cap.\n\n" +
+      "The same ScenePlan schema as plan_video_scenes — see that tool's description for scene types, how to provide user-supplied images vs generated SVG mockups, and voice options. Narration uses msedge-tts (free) or ElevenLabs (premium-* voices, requires ELEVENLABS_API_KEY).",
     inputSchema: scenePlanSchema,
   },
 ] as const;

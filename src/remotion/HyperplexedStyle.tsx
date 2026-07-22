@@ -80,6 +80,8 @@ function SceneRouter({
           src={scene.src}
           caption={scene.caption}
           kenBurns={scene.kenBurns}
+          fit={scene.fit}
+          background={scene.background}
           accent={plan.accent}
         />
       );
